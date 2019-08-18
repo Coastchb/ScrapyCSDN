@@ -1,12 +1,46 @@
 # author:ytouch
-# date:2019/07/27
+# date:2019/08/18
+# version: V1.1
 # this py is used for brushing pageview for csdn
+
+# V1.1更新：
+# 添加了ip自动更换功能
+# 添加了循环次数，缩短了爬取时间
 
 # 导入相关爬虫库和解析xml库即可
 import time
 from pyquery import PyQuery as pq
 import requests
 from bs4 import BeautifulSoup
+
+
+#代理ip获取的url地址
+proxies_url = "http://www.xiladaili.com"
+
+# 获取代理ip地址的功能
+'''@param:position:位置'''
+'''@return：可用的代理ip地址'''
+def getProxiesIpAddress(position):
+    url_response = requests.get(proxies_url)
+    # 判断是否访问成功
+    if url_response.status_code == 200:
+        proxies_html = url_response.text
+        '''转到BeautifulSoup内部进行处理'''
+        soup = BeautifulSoup(proxies_html,"html.parser") #
+        print(soup.find_all('td',id="",recrusive=False))
+        print('代理ip地址访问成功')
+    # 访问失败情况处理
+    else:
+        print("代理ip地址访问失败,请联系ytouch处理!,QQ:942840260")
+    return ""
+getProxiesIpAddress(1)
+
+'''代理ip'''
+proxies = {
+    "http": "http://202.121.96.33:8086",
+    # "https": "https://221.228.17.172:8181",
+}
+
 
 # 爬取csdn类
 class ScrapyMyCSDN:
@@ -19,7 +53,7 @@ class ScrapyMyCSDN:
     ''' Func:获取写了多少篇原创文章 '''
     ''' return:写了多少篇原创文章'''
     def getOriginalArticalNums(self):
-        main_response = requests.get(self.blogurl)
+        main_response = requests.get(self.blogurl,proxies=proxies)
         # 判断是否成功获取 (根据状态码来判断)
         if main_response.status_code == 200:
             print('获取成功')
@@ -73,7 +107,7 @@ class ScrapyMyCSDN:
         else:
             for nums in range(1,page_num+1):
                 self.cur_article_url = self.blogurl + '/article/list/%d'%nums+'?t=1&'  #拼接字符串
-                article_doc = requests.get(self.cur_article_url) #访问该网站
+                article_doc = requests.get(self.cur_article_url,proxies=proxies) #访问该网站
                 # 先判断是否成功访问
                 if article_doc.status_code == 200:
                     print('成功访问网站%s'%self.cur_article_url)
@@ -88,10 +122,14 @@ class ScrapyMyCSDN:
 
 
 #如何调用该类
-mycsdn = ScrapyMyCSDN('Giser_D') #初始化类 参数为博客名
-cur_write_nums = mycsdn.getOriginalArticalNums() #得到写了多少篇文章
-cur_blog_page = mycsdn.getScrapyPageNums(cur_write_nums) #cur_blog_page:返回需要爬取的页数
+if __name__ == '__main__':
+    mycsdn = ScrapyMyCSDN('Giser_D')  # 初始化类 参数为博客名
+    cur_write_nums = mycsdn.getOriginalArticalNums()  # 得到写了多少篇文章
+    cur_blog_page = mycsdn.getScrapyPageNums(cur_write_nums)  # cur_blog_page:返回需要爬取的页数
+    # 设置循环次数，即需要爬取的次数 进行爬取操作
+    for i in range(1, 10000):
+        mycsdn.beginToScrapy(cur_blog_page)
+        time.sleep(3)  # 给它休息时间 还是怕被封号的
 
-for i in range(1,60):
-    mycsdn.beginToScrapy(cur_blog_page)
-    time.sleep(10) # 给它休息时间 还是怕被封号的
+
+
